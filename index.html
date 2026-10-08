@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Расшифровка речи</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;800&display=swap">
+<style>
+:root{--rail:#1E2B33;--bg:#E8ECEF;--paper:#fff;--ink:#16212B;--muted:#5D6A75;--line:#D3DAE0;--soft:#F3F5F7;--signal:#F2B705;--signal-ink:#3A2C00;--danger:#C2412D;--ok:#3B8A57;--r:6px}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Golos Text",-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+.hazard{height:8px;background:repeating-linear-gradient(135deg,var(--signal) 0 12px,var(--rail) 12px 24px)}
+header{background:var(--rail);color:#fff}
+header .in{max-width:860px;margin:0 auto;padding:18px 16px;display:flex;gap:12px;align-items:center}
+.plate{background:var(--signal);color:var(--signal-ink);font-weight:800;width:38px;height:38px;border-radius:4px;display:grid;place-items:center}
+header h1{font-size:20px;margin:0;font-weight:800}
+header p{margin:0;color:#C9D3DA;font-size:13px}
+main{max-width:860px;margin:0 auto;padding:22px 16px 60px}
+.sheet{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:14px}
+label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
+input,select,textarea,button{font:inherit;padding:9px 11px;border:1px solid var(--line);border-radius:var(--r);background:#fff;color:var(--ink)}
+textarea{width:100%;min-height:260px;resize:vertical;line-height:1.55}
+button{background:var(--rail);color:#fff;border-color:var(--rail);cursor:pointer;font-weight:500}
+button.light{background:#fff;color:var(--ink);border-color:var(--line)}
+button:disabled{opacity:.5;cursor:default}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.row.one{grid-template-columns:1fr}
+.drop{border:2px dashed var(--line);border-radius:var(--r);padding:26px;text-align:center;cursor:pointer;background:var(--soft);margin-bottom:12px}
+.drop.over{border-color:var(--signal);background:#FFF8DE}
+.drop b{display:block;font-size:16px}
+.drop span{color:var(--muted);font-size:13px}
+.status{display:flex;gap:10px;align-items:center;margin:12px 0 0;min-height:24px}
+.status.err{color:var(--danger)}
+.bar{flex:1;height:6px;border-radius:3px;background:var(--soft);overflow:hidden}
+.bar i{display:block;height:100%;width:30%;background:var(--signal);animation:run 1.2s linear infinite}
+@keyframes run{from{margin-left:-30%}to{margin-left:100%}}
+@media (prefers-reduced-motion:reduce){.bar i{animation:none;width:100%}}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.muted{color:var(--muted);font-size:13px}
+:focus-visible{outline:3px solid var(--signal);outline-offset:2px}
+@media (max-width:640px){.row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="hazard"></div>
+<header><div class="in"><div class="plate">Т</div><div><h1>Расшифровка речи</h1><p>Голосовые, звонки и видео в текст. Работает на вашем сервере.</p></div></div></header>
+<main>
+  <div class="sheet">
+    <div class="row one"><label>Ключ доступа<input id="token" type="password" autocomplete="off" placeholder="Ключ из файла /etc/transcriber.env"></label></div>
+    <div class="drop" id="drop" tabindex="0" role="button" aria-label="Выбрать файл"><b id="fname">Перетащите файл сюда или нажмите, чтобы выбрать</b><span>Голосовое, запись звонка, видео: mp3, ogg, m4a, wav, mp4 и другие</span></div>
+    <input type="file" id="file" hidden accept="audio/*,video/*,.ogg,.oga,.opus,.m4a,.amr,.wav,.mp3,.mp4,.mov,.webm">
+    <div class="row">
+      <label>Кто говорит<select id="speakers">
+        <option value="auto">Определить автоматически</option>
+        <option value="mono">Один человек или общая запись</option>
+        <option value="stereo">Звонок: каждый на своей дорожке</option>
+      </select></label>
+      <label>Имена собеседников (для звонков)<input id="names" value="Менеджер, Клиент"></label>
+    </div>
+    <div class="row one"><label>Слова-подсказки: термины и названия, которые часто звучат<input id="prompt" placeholder="ГПУ, газопоршневая установка, сварка, ООО Ромашка"></label></div>
+    <button id="go" disabled>Расшифровать</button>
+    <div class="status" id="status" aria-live="polite"></div>
+  </div>
+  <div class="sheet" id="out" hidden>
+    <textarea id="text" aria-label="Текст расшифровки"></textarea>
+    <div class="actions"><button id="copy" class="light">Скопировать</button><button id="save" class="light">Скачать .txt</button></div>
+    <p class="muted" id="meta"></p>
+  </div>
+  <p class="muted">Для подключения других программ: <code>POST /v1/transcribe</code> или совместимый с OpenAI <code>POST /v1/audio/transcriptions</code>, ключ в заголовке <code>Authorization: Bearer КЛЮЧ</code>.</p>
+</main>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var file = null, timer = null;
+  try { $('token').value = localStorage.getItem('tr_token') || ''; } catch (e) {}
+  $('token').addEventListener('change', function () { try { localStorage.setItem('tr_token', $('token').value.trim()); } catch (e) {} });
+  function pick(f) { file = f; $('fname').textContent = f ? f.name + ' (' + (f.size / 1048576).toFixed(1) + ' МБ)' : 'Перетащите файл сюда или нажмите, чтобы выбрать'; $('go').disabled = !f; }
+  $('drop').addEventListener('click', function () { $('file').click(); });
+  $('drop').addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('file').click(); } });
+  $('file').addEventListener('change', function () { pick(this.files[0]); });
+  ['dragover', 'dragenter'].forEach(function (t) { $('drop').addEventListener(t, function (e) { e.preventDefault(); $('drop').classList.add('over'); }); });
+  ['dragleave', 'drop'].forEach(function (t) { $('drop').addEventListener(t, function (e) { e.preventDefault(); $('drop').classList.remove('over'); }); });
+  $('drop').addEventListener('drop', function (e) { if (e.dataTransfer.files[0]) pick(e.dataTransfer.files[0]); });
+
+  function status(html, err) { $('status').className = 'status' + (err ? ' err' : ''); $('status').innerHTML = html; }
+  function busy(text) { status('<span>' + text + '</span><div class="bar"><i></i></div>'); }
+  function headers() { return { 'Authorization': 'Bearer ' + $('token').value.trim() }; }
+  function fail(msg) { status(msg, true); $('go').disabled = false; }
+
+  function show(r) {
+    $('out').hidden = false;
+    $('text').value = r.text || '(речь не найдена)';
+    $('meta').textContent = 'Длительность ' + Math.round(r.duration) + ' сек, расшифровано за ' + Math.round(r.processing_seconds) + ' сек' + (r.speakers === 'stereo' ? ', звонок по ролям' : '');
+    status('Готово');
+    $('go').disabled = false;
+  }
+  function poll(id, started) {
+    fetch('/v1/jobs/' + id, { headers: headers() }).then(function (res) { return res.json().then(function (j) { return [res.status, j]; }); })
+      .then(function (a) {
+        var j = a[1];
+        if (a[0] !== 200) return fail(j.error || 'Ошибка');
+        if (j.status === 'done') return show(j);
+        if (j.status === 'error') return fail('Не получилось: ' + j.error);
+        var sec = Math.round((Date.now() - started) / 1000);
+        busy(j.status === 'queued' ? 'В очереди, перед вами ' + (j.position - 1) + '...' : 'Расшифровываю, прошло ' + sec + ' сек...');
+        timer = setTimeout(function () { poll(id, started); }, 2000);
+      }).catch(function () { timer = setTimeout(function () { poll(id, started); }, 4000); });
+  }
+  $('go').addEventListener('click', function () {
+    if (!file) return;
+    if (!$('token').value.trim()) return fail('Введите ключ доступа');
+    clearTimeout(timer);
+    $('go').disabled = true;
+    var fd = new FormData();
+    fd.append('file', file);
+    fd.append('speakers', $('speakers').value);
+    fd.append('names', $('names').value);
+    fd.append('prompt', $('prompt').value);
+    fd.append('wait', '0');
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/v1/transcribe');
+    xhr.setRequestHeader('Authorization', 'Bearer ' + $('token').value.trim());
+    xhr.upload.onprogress = function (e) { if (e.lengthComputable) busy('Загружаю файл: ' + Math.round(e.loaded / e.total * 100) + '%'); };
+    xhr.onload = function () {
+      var j = {}; try { j = JSON.parse(xhr.responseText); } catch (e) {}
+      if (xhr.status === 202 && j.id) { try { localStorage.setItem('tr_token', $('token').value.trim()); } catch (e) {} return poll(j.id, Date.now()); }
+      fail(j.error || ('Ошибка ' + xhr.status));
+    };
+    xhr.onerror = function () { fail('Нет связи с сервером'); };
+    xhr.send(fd);
+  });
+  $('copy').addEventListener('click', function () { var b = this; navigator.clipboard.writeText($('text').value).then(function () { b.textContent = 'Скопировано'; setTimeout(function () { b.textContent = 'Скопировать'; }, 1500); }); });
+  $('save').addEventListener('click', function () {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([$('text').value], { type: 'text/plain;charset=utf-8' }));
+    a.download = (file ? file.name.replace(/\.[^.]+$/, '') : 'расшифровка') + '.txt';
+    a.click();
+  });
+})();
+</script>
+</body>
+</html>

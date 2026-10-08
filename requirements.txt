@@ -1,0 +1,6 @@
+faster-whisper==1.2.1
+av==16.0.1
+fastapi==0.115.*
+uvicorn[standard]==0.32.*
+python-multipart==0.0.*
+numpy<3
