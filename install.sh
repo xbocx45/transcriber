@@ -148,7 +148,10 @@ if [ -z "${DOMAIN:-}" ]; then
 fi
 echo "$DOMAIN" > /etc/caddy/transcriber-domain
 
-cat > /etc/caddy/Caddyfile <<EOF
+# у каждой программы на сервере свой файл в /etc/caddy/sites, общий файл только подключает их
+mkdir -p /etc/caddy/sites
+printf 'import /etc/caddy/sites/*.caddy\n' > /etc/caddy/Caddyfile
+cat > /etc/caddy/sites/transcriber.caddy <<EOF
 $DOMAIN {
 	encode gzip
 	request_body {
@@ -185,6 +188,7 @@ LimitNOFILE=1048576
 WantedBy=multi-user.target
 EOF
 systemctl daemon-reload
+/usr/local/bin/caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null 2>&1 || die "ошибка в настройке https: sudo caddy validate --config /etc/caddy/Caddyfile"
 systemctl enable caddy >/dev/null 2>&1
 systemctl restart caddy
 
